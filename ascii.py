@@ -8,21 +8,25 @@ gscale = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^`'.
 def convert_to_ascii(imgpath, cols):
     global gscale
     image = Image.open(imgpath).convert("L")
-    enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(1.5)
+
     
     W, H = image.size[0], image.size[1]
     w = W/cols
     h = w/0.43
     rows = int(H/h)
-    
+    enhancer = ImageEnhance.Contrast(image)
+    image = enhancer.enhance(1.5)
+
     aimg = []
+    min_val, max_val = get_val_bounds(image)
+    brightness_range = 255 - min_val - (256 - max_val)
 
-    for j in range(rows):
-        y1 = int (j*h)
-        y2 = int ((j+1)*h)
 
-        if j == rows-1:
+    for row in range(rows):
+        y1 = int (row*h)
+        y2 = int ((row+1)*h)
+
+        if row == rows-1:
             y2 = H
         
         aimg.append('')
@@ -34,10 +38,10 @@ def convert_to_ascii(imgpath, cols):
                 x2 = W
             
             img = image.crop((x1, y1, x2, y2))
-            avg = int(getAverageBrightness(img))
-            gsval = gscale[int((avg*69)/255)]
+            avg = int(getAverageBrightness(img)) - min_val 
+            gsval = gscale[int((avg*(len(gscale) -1))/ brightness_range)]
 
-            aimg[j] += gsval
+            aimg[row] += gsval
 
     return aimg
 
@@ -46,6 +50,13 @@ def getAverageBrightness(image):
     w,h = im.shape
     # reshape the array to one dimension, so that we can take the average.
     return np.average(im.reshape(w*h))
+
+
+def get_val_bounds(image):
+    im = np.array(image)
+    w,h = im.shape
+    arr = im.reshape(w*h)    
+    return np.amin(arr), np.amax(arr)
 
 
 def main(): 
